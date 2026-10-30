@@ -30,7 +30,7 @@ function rememberSectionFilters(){
 }
 
 function applySectionView(){
- if(usesFOHData())sectionViews[page].mode='history';
+ if(usesFOHData()||page==='executive')sectionViews[page].mode='history';
  const view=activeFilters();days=isLiveView()?1:view.historyDays;
  if(view.population==='worked')view.population='active';
  $('daypart').value=view.daypart;view.population=syncEmployeesFilter($('population'),isLiveView(),view.population);
@@ -135,7 +135,7 @@ function requestGMCategory(category){
  if(gmCategoryRequests.has(category))return gmCategoryRequests.get(category);
  const pending=(async()=>{
   try{
-   const response=await fetch('pages/gm-'+category+'.html?v=0146');
+   const response=await fetch('pages/gm-'+category+'.html?v=0147');
    if(!response.ok)throw new Error('Category page could not be loaded');
    const markup=await response.text();
    const required={overview:'gmOverviewPage',operations:'gmOperationsPage',tbd:'gmTBDPage'}[category];
@@ -182,7 +182,7 @@ function requestFOHCategory(category){
  if(fohCategoryRequests.has(category))return fohCategoryRequests.get(category);
  const pending=(async()=>{
   try{
-   const response=await fetch('pages/'+category+'.html?v=0146');
+   const response=await fetch('pages/'+category+'.html?v=0147');
    if(!response.ok)throw new Error('Category page could not be loaded');
    const markup=await response.text();
    const required={overview:'id="fohOverviewHost"','staff-performance':'id="fohStaffPerformance"','guest-relations':'id="fohGuestRelationsHost"'}[category];
@@ -463,7 +463,7 @@ function applyDashboardColors(){
  if(dashboardColors.fohHeader.toUpperCase()==='#626B2F')dashboardColors.fohHeader='#42AAFF';
  const readable=hex=>colorInk(hex)==='#FFFFFF'?colorShade(hex,.35):hex;
  const rules=[`:root{--bg:${dashboardColors.siteBackground};--border:var(--line)}`];
- for(const [section,key] of [['foh','fohHeader'],['executive','executiveHeader'],['kitchen','kitchenHeader'],['inventory','inventoryHeader']])rules.push(`body[data-section="${section}"]{--accent:${readable(dashboardColors[key])};--section:${dashboardColors[key]}}`);
+ for(const [section,key] of [['foh','fohHeader'],['executive','executiveHeader'],['kitchen','kitchenHeader'],['inventory','inventoryHeader']])rules.push(`body[data-section="${section}"]{--accent:${readable(dashboardColors.fohHeader)};--section:${dashboardColors[key]}}`);
  for(const key of ['mix','food','server','section','staffing','operations'])rules.push(`.foh-group.${key}-group{--group-color:${readable(dashboardColors[key])};--group-tint:var(--accent-tint);--group-text:${readable(dashboardColors[key])}}.foh-group.${key}-group>.foh-group-banner{color:var(--group-color)}`);
  $('dashboardColorTheme').textContent=rules.join('\n');
 }
@@ -582,7 +582,7 @@ async function updateAdmin(){
 function selectOriginalMode(mode){setFloorNavOpen(false);if(!setDashboardMode(mode))render()}
 
 function syncFOHWorkspaces(){
- const foh=usesFOHData();fohWorkspace='old';newFOHMode='history';
+ const foh=usesFOHData()||page==='executive';fohWorkspace='old';newFOHMode='history';
  document.body.dataset.fohWorkspace='old';document.body.dataset.newFohMode='history';
  $('newFOHLiveModule').hidden=true;$('fohLivePages').hidden=true;
  syncLiveFloorVisibility(false);renderCurrentRefreshStatus();
