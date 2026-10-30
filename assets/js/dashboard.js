@@ -116,7 +116,55 @@ function setDashboardPeriod(value){
 function navigateDashboard(section){
  setFloorNavOpen(false);
  if(!Object.hasOwn(names,section))return;
+ if(section==='executive')history.replaceState(null,'','#gm-'+gmCategory);
+ else if(/^#gm-/.test(location.hash))history.replaceState(null,'',location.pathname+location.search);
  rememberSectionFilters();page=section;applySectionView();render();const main=document.querySelector('.main');if(main)main.scrollTop=0;if(document.scrollingElement)document.scrollingElement.scrollTop=0;
+}
+
+function selectGMCategory(category){
+ if(!['overview','operations','tbd'].includes(category))return false;
+ gmCategory=category;
+ if(page!=='executive'){rememberSectionFilters();page='executive';applySectionView()}
+ history.replaceState(null,'','#gm-'+category);
+ render();
+ for(const scroller of [document.querySelector('.main'),document.scrollingElement])if(scroller)scroller.scrollTop=0;
+ return true;
+}
+
+function requestGMCategory(category){
+ if(gmCategoryRequests.has(category))return gmCategoryRequests.get(category);
+ const pending=(async()=>{
+  try{
+   const response=await fetch('pages/gm-'+category+'.html?v=0144');
+   if(!response.ok)throw new Error('Category page could not be loaded');
+   const markup=await response.text();
+   const required={overview:'gmOverviewPage',operations:'gmOperationsPage',tbd:'gmTBDPage'}[category];
+   if(!markup.includes('id="'+required+'"'))throw new Error('Category page is invalid');
+   gmCategoryPages.set(category,markup);
+   if(page==='executive'&&gmCategory===category)render();
+  }catch(error){
+   if(page==='executive'&&gmCategory===category){
+    $('gmCategoryHost').innerHTML='<p role="alert">This page could not be loaded.</p><button type="button" id="retryGMCategory">Retry</button>';
+    $('retryGMCategory').onclick=()=>{gmCategoryRequests.delete(category);render()};
+   }
+   console.warn('General Manager category load failed.',error);
+  }finally{gmCategoryRequests.delete(category)}
+ })();
+ gmCategoryRequests.set(category,pending);return pending;
+}
+
+function renderGMCategory(){
+ const host=$('gmCategoryHost'),legacy=$('legacyDashboardModules'),main=$('dashboardMain');
+ // Preserve the existing module nodes before replacing a category fragment.
+ if(legacy.parentElement!==main)main.insertBefore(legacy,document.querySelector('.demo-footer'));
+ host.hidden=page!=='executive';
+ if(page!=='executive'){host.innerHTML='';gmMountedCategory=null;return}
+ if(gmMountedCategory!==gmCategory){
+  const markup=gmCategoryPages.get(gmCategory);
+  if(!markup){host.innerHTML='<p role="status">Loading…</p>';gmMountedCategory=null;requestGMCategory(gmCategory);return}
+  host.innerHTML=markup;gmMountedCategory=gmCategory;
+ }
+ if(gmCategory==='tbd')$('gmLegacyModules').append(legacy);
 }
 
 function selectFOHCategory(category,moduleId=null){
@@ -133,7 +181,7 @@ function requestFOHCategory(category){
  if(fohCategoryRequests.has(category))return fohCategoryRequests.get(category);
  const pending=(async()=>{
   try{
-   const response=await fetch('pages/'+category+'.html?v=0142');
+   const response=await fetch('pages/'+category+'.html?v=0144');
    if(!response.ok)throw new Error('Category page could not be loaded');
    const markup=await response.text();
    const required={overview:'id="fohOverviewHost"','staff-performance':'id="fohStaffPerformance"','guest-relations':'id="fohGuestRelationsHost"'}[category];
@@ -233,7 +281,7 @@ function renderCurrentRefreshStatus(){
 function captureDashboardView(){
  const overlay=$('bestSellersOverlay');
  rememberSectionFilters();
- return {fohCategory,fohWorkspace,newFOHMode,staffingWeekStart,salesMixAllDayView,trendDefaultsVersion:61,page,days,sectionViews:JSON.parse(JSON.stringify(sectionViews)),daypart:selectValue('daypart'),population:selectValue('population'),metricMode,employeeRoles:{...employeeRoles},sortServerBy,sortServerDirection,sectionPlanningView:{...sectionPlanningView},fohTrendViews:JSON.parse(JSON.stringify(fohTrendViews)),rankingViews:JSON.parse(JSON.stringify(rankingViews)),sectionTableSort:JSON.parse(JSON.stringify(sectionTableSort)),bestSellersView:{...bestSellersView},itemsOpen:!!overlay&&!overlay.hidden};
+ return {gmCategory,fohCategory,fohWorkspace,newFOHMode,staffingWeekStart,salesMixAllDayView,trendDefaultsVersion:61,page,days,sectionViews:JSON.parse(JSON.stringify(sectionViews)),daypart:selectValue('daypart'),population:selectValue('population'),metricMode,employeeRoles:{...employeeRoles},sortServerBy,sortServerDirection,sectionPlanningView:{...sectionPlanningView},fohTrendViews:JSON.parse(JSON.stringify(fohTrendViews)),rankingViews:JSON.parse(JSON.stringify(rankingViews)),sectionTableSort:JSON.parse(JSON.stringify(sectionTableSort)),bestSellersView:{...bestSellersView},itemsOpen:!!overlay&&!overlay.hidden};
 }
 
 function persistDashboardView(){try{sessionStorage.setItem(dashboardViewStorageKey,JSON.stringify(captureDashboardView()))}catch(error){/* In-memory selections still survive automatic refreshes when storage is unavailable. */}}
@@ -252,6 +300,7 @@ function restoreDashboardView(){
  // FOH now has one historical workspace; retain its saved historical filters.
  fohWorkspace='old';newFOHMode='history';
  if(Object.hasOwn(names,view.page))page=view.page;
+ if(['overview','operations','tbd'].includes(view.gmCategory))gmCategory=view.gmCategory;
  if(['overview','staff-performance','guest-relations'].includes(view.fohCategory))fohCategory=view.fohCategory;
  if(view.sectionViews&&typeof view.sectionViews==='object'){
   for(const section of Object.keys(names)){
@@ -319,6 +368,8 @@ async function refreshDashboardData(){
 
 function initializeDashboard(){
  const reopenItems=restoreDashboardView();
+ const gmLink=location.hash.match(/^#gm-(overview|operations|tbd)$/);
+ if(gmLink){page='executive';gmCategory=gmLink[1]}
  const moduleLink=fohOverviewDestination(location.hash);
  if(moduleLink){page='foh';fohCategory=moduleLink.category;fohModuleTarget=moduleLink}
  applySectionView();render();installTrendResize();if(reopenItems)openBestSellersWindow();
@@ -335,30 +386,34 @@ function render(){
  const historyFOH=page==='foh'&&!isLiveView(),parking=page==='parkinglot';
  document.documentElement.dataset.section=page;document.body.dataset.section=page;
  $('title').textContent=names[page];$('roleNote').textContent='';
- renderFOHCategory();
- $('managementAttention').hidden=historyFOH||parking;
+ renderFOHCategory();renderGMCategory();
+ const gmTBD=page==='executive'&&gmCategory==='tbd';
+ const blankGM=page==='executive'&&!gmTBD;
+ $('legacyDashboardModules').hidden=historyFOH||blankGM||(page==='executive'&&gmMountedCategory!=='tbd');
+ document.querySelector('.demo-footer').hidden=blankGM;
+ $('managementAttention').hidden=historyFOH||parking||blankGM;
  $('alerts').innerHTML=(page==='foh'?computedFOHAlerts():(alerts[page]||[])).map(a=>`<button class="alert" data-alert="${a[3]}"><span class="tag">${a[0]}</span><strong>${a[1]}</strong><small>${a[2]}</small></button>`).join('');
  $('primaryTitle').innerHTML='TOTALS<span class="section-period">'+dashboardPeriodLabel()+'</span>';
  $('dailyTitle').innerHTML='AVG PER DAY<span class="section-period">'+dashboardPeriodLabel()+'</span>';
- $('cards').innerHTML=parking?fohMetricCards(false):page==='foh'?'':(metrics[page]||[]).map(card).join('');
+ $('cards').innerHTML=parking?fohMetricCards(false):page==='foh'||blankGM?'':(metrics[page]||[]).map(card).join('');
  $('cards').style.display=page==='foh'?'none':'grid';
  $('dailyTitle').style.display=parking?'flex':'none';$('dailyCards').style.display=parking?'grid':'none';
  $('dailyCards').innerHTML=parking?fohMetricCards(true):'';
  $('cards').classList.toggle('foh-primary',parking);$('dailyCards').classList.toggle('foh-primary',parking);
  $('primaryTitle').style.display=parking?'flex':'none';
- $('content').innerHTML=page==='foh'?'':parking?fohGroupedContent():content();
- const composition=['parkinglot','executive'].includes(page)?compositionHTML():null;
- $('salesMixSection').hidden=page!=='executive';$('salesMixSection').innerHTML=page==='executive'?composition.salesMix:'';
- $('fohGroup-mix').hidden=page!=='executive';$('fohGroup-upselling').hidden=!parking;$('upsellingHost').innerHTML=parking?composition.upselling:'';
+ $('content').innerHTML=page==='foh'||blankGM?'':parking?fohGroupedContent():content();
+ const composition=parking||gmTBD?compositionHTML():null;
+ $('salesMixSection').hidden=!gmTBD;$('salesMixSection').innerHTML=gmTBD?composition.salesMix:'';
+ $('fohGroup-mix').hidden=!gmTBD;$('fohGroup-upselling').hidden=!parking;$('upsellingHost').innerHTML=parking?composition.upselling:'';
  $('fohControls').style.display='block';
- $('trendHost-mix').hidden=page!=='executive'||isLiveView();if($('trendHost-mix').hidden)$('trendHost-mix').innerHTML='';
+ $('trendHost-mix').hidden=!gmTBD||isLiveView();if($('trendHost-mix').hidden)$('trendHost-mix').innerHTML='';
  $('populationNote').textContent=parking?'Employees filters employee tables and Server Trends. Restaurant sales, menu and section totals include all employees.':'';
  if(parking){
   bindStaffingModule();syncEmployeeRoles();syncMetricMode();renderServerTable();
   syncSectionPlanningControls();renderFOHTrends();renderRankings();renderOperations();
   const allItems=$('viewAllItems');if(allItems)allItems.onclick=openBestSellersWindow;
  }
- if(page==='executive'){bindSalesMixControls();if(!isLiveView())renderFOHTrend('mix')}
+ if(gmTBD){bindSalesMixControls();if(!isLiveView())renderFOHTrend('mix')}
  renderBestSellersWindow();
  document.querySelectorAll('[data-alert]').forEach(b=>b.onclick=()=>usesFOHData()?showFOHDetail(b.dataset.alert):showDetail(b.dataset.alert));
  document.querySelectorAll('[data-detail]').forEach(b=>b.onclick=()=>usesFOHData()?showFOHDetail(b.dataset.detail):showDetail(b.dataset.detail));
@@ -416,7 +471,7 @@ function applyDashboardColors(){
 function adminColorFields(){
  const colors=adminDraft.colors;
  const row=(key,label)=>`<label class="admin-color-field"><span>${escapeHTML(label)}</span><span class="admin-color-inputs"><input type="color" value="${colors[key]}" data-theme-picker="${key}" aria-label="${escapeHTML(label)} color picker"><input type="text" value="${colors[key]}" data-theme-hex="${key}" maxlength="7" spellcheck="false" aria-label="${escapeHTML(label)} hex code"></span></label>`;
- $('adminColorFields').innerHTML='<h4>Site</h4>'+row('siteBackground','Site background')+'<h4>FOH</h4>'+[['fohHeader','Header'],['fohSubhead','Subheads'],['mix','Sales Mix / Upselling'],['food','Food'],['server','Server'],['section','Sections'],['staffing','Staffing'],['operations','Promotions & Records']].map(([key,label])=>row(key,label)).join('')+'<h4>Other dashboard headers</h4>'+[['executiveHeader','Executive Overview'],['kitchenHeader','Kitchen Operations'],['inventoryHeader','Inventory & Costs']].map(([key,label])=>row(key,label)).join('');
+ $('adminColorFields').innerHTML='<h4>Site</h4>'+row('siteBackground','Site background')+'<h4>FOH</h4>'+[['fohHeader','Header'],['fohSubhead','Subheads'],['mix','Sales Mix / Upselling'],['food','Food'],['server','Server'],['section','Sections'],['staffing','Staffing'],['operations','Promotions & Records']].map(([key,label])=>row(key,label)).join('')+'<h4>Other dashboard headers</h4>'+[['executiveHeader','General Manager'],['kitchenHeader','Kitchen Operations'],['inventoryHeader','Inventory & Costs']].map(([key,label])=>row(key,label)).join('');
  const host=$('adminColorFields'),hexes=[...host.querySelectorAll('[data-theme-hex]')],pickers=[...host.querySelectorAll('[data-theme-picker]')];
  for(const input of hexes)input.oninput=()=>{if(/^#[0-9A-Fa-f]{6}$/.test(input.value)){pickers.find(p=>p.dataset.themePicker===input.dataset.themeHex).value=input.value;$('adminColorFeedback').textContent='Click UPDATE to apply changes.'}};
  for(const picker of pickers)picker.oninput=()=>{hexes.find(input=>input.dataset.themeHex===picker.dataset.themePicker).value=picker.value.toUpperCase();$('adminColorFeedback').textContent='Click UPDATE to apply changes.'};
@@ -564,12 +619,13 @@ function selectAdminCategory(value){if(!Object.hasOwn(adminCategoryNames,value))
 function syncMidnightHeader(){
  $('headerShift').hidden=!['foh','parkinglot','executive'].includes(page);
  $('headerEmployees').hidden=!usesFOHData();$('headerPeriod').hidden=isLiveView();
- $('fohModuleNav').hidden=!usesFOHData();
+ $('fohModuleNav').hidden=!usesFOHData()&&page!=='executive';
  $('fohModuleNav').setAttribute('aria-label',names[page]+' modules');
  const links=[...document.querySelectorAll('[data-module-dashboard]')];
  links.forEach(link=>link.hidden=link.dataset.moduleDashboard!==page);
  const visible=links.filter(link=>!link.hidden);
  if(page==='foh')for(const link of visible){const active=link.dataset.fohCategory===fohCategory;link.classList.toggle('active',active);if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current')}
+ else if(page==='executive')for(const link of visible){const active=link.dataset.gmCategory===gmCategory;link.classList.toggle('active',active);if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current')}
  else if(!visible.some(link=>link.classList.contains('active')))links.forEach(link=>link.classList.toggle('active',link===visible[0]));
 }
 

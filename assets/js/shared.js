@@ -29,12 +29,12 @@ function kpiPerformanceClass(value,target,lowerBetter=false){
 
 
 const $=id=>document.getElementById(id),fmt=n=>Math.round(n).toLocaleString('en-US'),cash=n=>'$'+fmt(n);
-let page='foh',days=1;
+let page='executive',days=1;
 
 const dashboardRevisionMatch=String(document.title||'').match(/Dashboard v([0-9]+)/);
 if(dashboardRevisionMatch)$('dashboardRevision').textContent=dashboardRevisionMatch[1];
 
-const names={executive:'Executive Overview',foh:'Front of House',kitchen:'Kitchen Operations',inventory:'Inventory & Costs',parkinglot:'Parking Lot'};
+const names={executive:'General Manager',foh:'Front of House',kitchen:'Kitchen Operations',inventory:'Inventory & Costs',parkinglot:'Parking Lot'};
 
 const dashboardPeriods=[['1','Today'],['7','Last 7 Days'],['30','Last 30 Days'],['90','Last 90 Days'],['rolling12','Rolling 12 Months'],['quarter','Last Quarter'],['year','Last Calendar Year'],['ytd','Year to Date']];
 
@@ -836,7 +836,7 @@ window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==
 
 let adminCategory='foh';
 
-const adminCategoryNames={executive:'Executive',foh:'FOH',kitchen:'Kitchen',inventory:'Inventory',costs:'Costs',dashboard:'Dashboard'};
+const adminCategoryNames={executive:'General Manager',foh:'FOH',kitchen:'Kitchen',inventory:'Inventory',costs:'Costs',dashboard:'Dashboard'};
 
 for(const b of document.querySelectorAll('[data-admin-category]'))b.onclick=()=>selectAdminCategory(b.dataset.adminCategory);
 
@@ -877,6 +877,10 @@ let fohDessertResizeObserver=null;
 // cost-informed weights when verified item costs are available. This is a
 // sales-effectiveness index, not a measured profit or employee overall score.
 const fohPerformanceWeights={alcohol:.50,apps:.30,dessert:.20};
+
+let gmCategory='overview',gmMountedCategory=null;
+const gmCategoryPages=new Map(),gmCategoryRequests=new Map();
+for(const link of document.querySelectorAll('[data-gm-category]'))link.onclick=event=>{event.preventDefault();selectGMCategory(link.dataset.gmCategory)};
 
 let fohCategory='overview',fohMountedCategory=null;
 let fohModuleTarget=null;

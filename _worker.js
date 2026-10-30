@@ -5,13 +5,30 @@
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 const username = 'jinya';
+const publicBrandAssets = new Set([
+  '/favicon.ico',
+  '/images/favicon/favicon.svg',
+  '/images/favicon/favicon-16x16.png',
+  '/images/favicon/favicon-32x32.png',
+  '/images/favicon/apple-touch-icon.png',
+]);
+
+function reservedOwnerPath(pathname) {
+  // Keep future Owner pages/data in a separate namespace. This area stays
+  // disabled until separate server-verified Owner authentication is added.
+  // A hidden menu alone must never authorize access to Owner data.
+  let path;
+  try { path = decodeURIComponent(pathname).replace(/\\/g, '/'); }
+  catch { return true; }
+  return /^\/(?:owner(?:[-/.]|$)|api\/owner(?:[-/.]|$)|pages\/owner(?:[-/.]|$)|assets\/(?:js\/)?owner(?:[-/.]|$))/i.test(path);
+}
 
 function protectHeaders(headers) {
   headers.set('Cache-Control', 'private, no-store');
   headers.set('CDN-Cache-Control', 'no-store');
   headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
   headers.set('X-Robots-Tag', 'noindex, nofollow');
-  headers.set('X-Jinya-Auth-Version', '2');
+  headers.set('X-Jinya-Auth-Version', '3');
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('Referrer-Policy', 'same-origin');
   headers.set('Strict-Transport-Security', 'max-age=31536000');
@@ -60,6 +77,22 @@ export default {
       url.protocol = 'https:';
       return message('Use HTTPS.', 308, { Location: url.href });
     }
+    // Branding is public so browsers can display a favicon before sign-in.
+    // No dashboard pages, settings, scripts, or data are exempted.
+    if (publicBrandAssets.has(url.pathname) && ['GET', 'HEAD'].includes(request.method)) {
+      try {
+        const assetRequest = new Request(request);
+        assetRequest.headers.delete('Authorization');
+        const asset = await env.ASSETS.fetch(assetRequest);
+        return new Response(asset.body, {
+          status: asset.status,
+          statusText: asset.statusText,
+          headers: protectHeaders(new Headers(asset.headers)),
+        });
+      } catch {
+        return message('Brand asset temporarily unavailable.', 503);
+      }
+    }
     const password = env.DASHBOARD_PASSWORD;
     if (typeof password !== 'string' || password.length === 0) {
       return message('Dashboard setup error: DASHBOARD_PASSWORD is missing from this deployment. Set the secret for the Production environment of this Pages project, save it, and create a new deployment.', 503);
@@ -76,6 +109,9 @@ export default {
       }
       if (!['GET', 'HEAD'].includes(request.method)) {
         return message('This dashboard is read-only.', 405, { Allow: 'GET, HEAD' });
+      }
+      if (reservedOwnerPath(url.pathname)) {
+        return message('This area is unavailable for this login.', 403);
       }
       const assetRequest = new Request(request);
       assetRequest.headers.delete('Authorization');
