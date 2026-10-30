@@ -619,3 +619,8 @@ body[data-design=b] #jinya-foh-attendance .att-person-icon.gender-female{color:#
 [data-dashboard-ui] .foh-table th:first-child{text-align:left}
 @media(max-width:1100px){.dashboard-columns{grid-template-columns:minmax(0,1fr)}}
 [data-dashboard-ui] .foh-table td.station{font-size:var(--foh-role-size);overflow-wrap:normal}
+
+/* Details share the table's closing rule; no second separator. */
+[data-dashboard-ui] .detail{border-top:0;margin-top:0;padding-top:18px}
+[data-dashboard-ui] th button{color:inherit;width:100%;text-align:inherit}
+[data-dashboard-ui] #ac-rate{margin-top:var(--foh-heading-gap)}
