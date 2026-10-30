@@ -1,0 +1,65 @@
+{
+  "format": "jinya-admin-settings",
+  "schema": 1,
+  "exportedAt": "2026-10-20T02:37:40.739Z",
+  "salesMixTargets": {
+    "lunch": {
+      "alcohol": 10,
+      "apps": 12,
+      "dessert": 5,
+      "food": 58,
+      "drink": 15
+    },
+    "dinner": {
+      "alcohol": 25,
+      "apps": 10,
+      "dessert": 5,
+      "food": 50,
+      "drink": 10
+    }
+  },
+  "employeeTargets": {
+    "lunch": {
+      "apps": 4,
+      "food": 19,
+      "drink": 4,
+      "dessert": 2,
+      "alcohol": 3,
+      "check": 28,
+      "duration": 45
+    },
+    "dinner": {
+      "apps": 7,
+      "food": 21,
+      "drink": 6,
+      "dessert": 3,
+      "alcohol": 6,
+      "check": 37,
+      "duration": 75
+    }
+  },
+  "refundTargets": {
+    "lunch": 0.5,
+    "dinner": 0.5
+  },
+  "colors": {
+    "siteBackground": "#E2E2E2",
+    "fohHeader": "#626B2F",
+    "fohSubhead": "#6F6F6F",
+    "mix": "#435E80",
+    "food": "#8C6135",
+    "server": "#366C52",
+    "section": "#76538D",
+    "staffing": "#596A75",
+    "operations": "#665B4D",
+    "executiveHeader": "#384D64",
+    "kitchenHeader": "#8B4938",
+    "inventoryHeader": "#386B68"
+  },
+  "serverAlcoholGoal": 25,
+  "fohAlertThresholds": {
+    "waitlistMinutes": 15,
+    "pickupMinutes": 1,
+    "mealWaitMinutes": 12
+  }
+}
