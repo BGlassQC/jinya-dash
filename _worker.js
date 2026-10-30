@@ -11,6 +11,7 @@ function protectHeaders(headers) {
   headers.set('CDN-Cache-Control', 'no-store');
   headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
   headers.set('X-Robots-Tag', 'noindex, nofollow');
+  headers.set('X-Jinya-Auth-Version', '2');
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('Referrer-Policy', 'same-origin');
   headers.set('Strict-Transport-Security', 'max-age=31536000');
@@ -60,8 +61,11 @@ export default {
       return message('Use HTTPS.', 308, { Location: url.href });
     }
     const password = env.DASHBOARD_PASSWORD;
-    if (typeof password !== 'string' || password.length < 16) {
-      return message('Dashboard access is not configured. Contact the owner.', 503);
+    if (typeof password !== 'string' || password.length === 0) {
+      return message('Dashboard setup error: DASHBOARD_PASSWORD is missing from this deployment. Set the secret for the Production environment of this Pages project, save it, and create a new deployment.', 503);
+    }
+    if (password.length < 16) {
+      return message('Dashboard setup error: DASHBOARD_PASSWORD was received, but it is shorter than the required 16 characters. Save a new password of at least 16 characters and create a new deployment.', 503);
     }
     try {
       const credentials = readCredentials(request);
