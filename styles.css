@@ -624,3 +624,6 @@ body[data-design=b] #jinya-foh-attendance .att-person-icon.gender-female{color:#
 [data-dashboard-ui] .detail{border-top:0;margin-top:0;padding-top:18px}
 [data-dashboard-ui] th button{color:inherit;width:100%;text-align:inherit}
 [data-dashboard-ui] #ac-rate{margin-top:var(--foh-heading-gap)}
+
+/* Shared module spacing: subsequent Operations responsibilities. */
+#jinya-pickup-review{margin-top:28px}
