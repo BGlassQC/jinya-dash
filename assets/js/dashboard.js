@@ -135,7 +135,7 @@ function requestGMCategory(category){
  if(gmCategoryRequests.has(category))return gmCategoryRequests.get(category);
  const pending=(async()=>{
   try{
-   const response=await fetch('pages/gm-'+category+'.html?v=0150');
+   const response=await fetch('pages/gm-'+category+'.html?v=0151');
    if(!response.ok)throw new Error('Category page could not be loaded');
    const markup=await response.text();
    const required={overview:'gmOverviewPage',operations:'gmOperationsPage',tbd:'gmTBDPage'}[category];
@@ -182,7 +182,7 @@ function requestFOHCategory(category){
  if(fohCategoryRequests.has(category))return fohCategoryRequests.get(category);
  const pending=(async()=>{
   try{
-   const response=await fetch('pages/'+category+'.html?v=0150');
+   const response=await fetch('pages/'+category+'.html?v=0151');
    if(!response.ok)throw new Error('Category page could not be loaded');
    const markup=await response.text();
    const required={overview:'id="fohOverviewHost"','staff-performance':'id="fohStaffPerformance"','guest-relations':'id="fohGuestRelationsHost"'}[category];

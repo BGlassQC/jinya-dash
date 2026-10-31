@@ -578,12 +578,12 @@ body[data-design=b] #jinya-foh-attendance .att-person-icon.gender-female{color:#
 
 /* Shared dashboard module standard: FOH is the visual source of truth. */
 [data-dashboard-ui]{font-family:Arial,Helvetica,sans-serif;color:var(--ink);line-height:var(--foh-body-leading)}
-.dashboard-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
+.dashboard-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--dashboard-gap);align-items:start}
 .dashboard-grid-wide{grid-column:1/-1}
 .dashboard-module-panel{min-width:0;background:var(--surface);padding:var(--foh-panel-pad-y) var(--foh-panel-pad-x);border-radius:2px}
 [data-dashboard-ui] .heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 [data-dashboard-ui] .muted{font-size:var(--foh-note-size);color:var(--muted)}
-[data-dashboard-ui] .summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(100%,650px)}
+[data-dashboard-ui] .summary{width:100%}
 [data-dashboard-ui] .stat{background:var(--surface);padding:var(--foh-panel-pad-y) var(--foh-panel-pad-x);min-width:0}
 [data-dashboard-ui] .gauge{display:flex;gap:14px;align-items:center}
 [data-dashboard-ui] .gauge svg{width:115px;flex-shrink:0}
@@ -602,13 +602,13 @@ body[data-design=b] #jinya-foh-attendance .att-person-icon.gender-female{color:#
 [data-dashboard-ui] footer{margin-top:18px}
 [data-dashboard-ui]{--jp-line:var(--line);--jp-green:var(--positive);--jp-text:var(--ink)}
 @media(max-width:1000px){.dashboard-module-grid{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:500px){[data-dashboard-ui] .summary{grid-template-columns:minmax(0,1fr)}[data-dashboard-ui] table{min-width:380px}}
+@media(max-width:500px){[data-dashboard-ui] table{min-width:380px}}
 
 /* Shared FOH structure: one section title, shared panels, independent columns. */
 [data-dashboard-ui] .dashboard-module-grid{display:block}
-.dashboard-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
-.dashboard-column{display:flex;flex-direction:column;gap:18px;min-width:0}
-[data-dashboard-ui] .summary{margin:0 0 18px}
+.dashboard-columns{min-width:0}
+.dashboard-column{display:flex;flex-direction:column;gap:var(--dashboard-gap);min-width:0}
+[data-dashboard-ui] .summary{margin:0 0 var(--dashboard-gap)}
 [data-dashboard-ui] .stat{padding:var(--foh-panel-pad-y) var(--foh-panel-pad-x)}
 [data-dashboard-ui] .stat>.muted{font-size:var(--foh-caption-size);margin-top:var(--foh-caption-gap);min-height:var(--foh-caption-height)}
 [data-dashboard-ui] .foh-module-title h2{color:var(--muted)}
@@ -617,13 +617,41 @@ body[data-design=b] #jinya-foh-attendance .att-person-icon.gender-female{color:#
 [data-dashboard-ui] .foh-table td:first-child{font-size:var(--foh-role-size);text-align:left}
 [data-dashboard-ui] .foh-table th{font-size:var(--foh-table-header-size);text-align:center}
 [data-dashboard-ui] .foh-table th:first-child{text-align:left}
-@media(max-width:1100px){.dashboard-columns{grid-template-columns:minmax(0,1fr)}}
+
 [data-dashboard-ui] .foh-table td.station{font-size:var(--foh-role-size);overflow-wrap:normal}
 
 /* Details share the table's closing rule; no second separator. */
 [data-dashboard-ui] .detail{border-top:0;margin-top:0;padding-top:18px}
-[data-dashboard-ui] th button{color:inherit;width:100%;text-align:inherit}
+[data-dashboard-ui] th button{color:inherit;width:100%;padding:0;text-align:inherit}
 [data-dashboard-ui] #ac-rate{margin-top:var(--foh-heading-gap)}
 
-/* Shared module spacing: subsequent Operations responsibilities. */
-#jinya-pickup-review{margin-top:28px}
+/* Layout contract for every dashboard: one gutter and reusable page fractions.
+   A 12-column grid aligns full, half, third and quarter modules. */
+:root{--dashboard-gap:18px;--dashboard-section-gap:26px;--dashboard-title-gap:9px}
+.dashboard-layout{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:var(--dashboard-gap);align-items:start}
+.dashboard-layout>*{min-width:0}
+.dashboard-width-full{grid-column:span 12}
+.dashboard-width-half{grid-column:span 6}
+.dashboard-width-third{grid-column:span 4}
+.dashboard-width-quarter{grid-column:span 3}
+[data-foh-ui] .foh-module-title{margin-bottom:var(--dashboard-title-gap)}
+#jinya-pickup-review{margin-top:var(--dashboard-section-gap)}
+/* Existing FOH grids use the same fractions and gutters as GM Operations. */
+body[data-design=a] .metric-panels{grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--dashboard-gap)}
+.foh-sales-coaching-row{column-gap:var(--dashboard-gap);row-gap:var(--dashboard-section-gap);margin-top:var(--dashboard-section-gap)}
+#fohOverviewHost .foh-overview-metrics,#fohOverviewHost .foh-overview-sales{gap:var(--dashboard-gap)}
+#fohOverviewHost .foh-overview-sales{margin-top:var(--dashboard-gap)}
+#fohOverviewHost .foh-overview-guest{margin-top:var(--dashboard-section-gap);padding-top:var(--dashboard-section-gap)}
+#fohOverviewHost .foh-overview-guest .foh-overview-card{max-width:calc((100% - 3 * var(--dashboard-gap))/4)}
+:is(#fohTurnoverHost,#fohAttendanceHost){margin-top:var(--dashboard-section-gap)}
+@media(max-width:1100px){
+ .dashboard-width-half,.dashboard-width-third{grid-column:span 12}
+ .dashboard-width-quarter{grid-column:span 6}
+ #fohOverviewHost .foh-overview-guest .foh-overview-card{max-width:calc((100% - var(--dashboard-gap))/2)}
+}
+@media(max-width:700px){body[data-design=a] .metric-panels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .dashboard-width-quarter{grid-column:span 12}
+ #fohOverviewHost .foh-overview-guest .foh-overview-card{max-width:none}
+}
+@media(max-width:440px){body[data-design=a] .metric-panels{grid-template-columns:minmax(0,1fr)}}
